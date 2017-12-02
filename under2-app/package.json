@@ -9,7 +9,9 @@
     "build": "ionic-app-scripts build",
     "lint": "ionic-app-scripts lint",
     "ionic:build": "ionic-app-scripts build",
-    "ionic:serve": "ionic-app-scripts serve"
+    "ionic:serve": "ionic-app-scripts serve",
+    "copy:cesium": "cpx 'src/scripts/Cesium/**/*' www/scripts/Cesium",
+    "postinstall": "npm run copy:cesium"
   },
   "dependencies": {
     "@angular/common": "5.0.3",
@@ -32,7 +34,8 @@
   },
   "devDependencies": {
     "@ionic/app-scripts": "3.1.4",
-    "typescript": "2.4.2"
+    "typescript": "2.4.2",
+    "cpx": "^1.5.0"
   },
   "description": "An Ionic project"
 }
