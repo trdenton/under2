@@ -22,7 +22,7 @@ app.post('/geojson',function(req,res){
 	console.log(longitude);
 	console.log(radius);
 
-	const text = "SELECT wkb_geometry as polygon, total_assessed_value, geom as location from taxes_map where ST_Distance_Sphere(geom, ST_MakePoint($1,$2)) <= $3;"
+	const text = "SELECT ST_AsText(wkb_geometry) as polygon, total_assessed_value, ST_AsText(geom) as location from taxes_map where ST_Distance_Sphere(geom, ST_MakePoint($1,$2)) <= $3;"
 	var values = [longitude,latitude,radius]
 
 	client.query(text,values, (err, dat)=>
