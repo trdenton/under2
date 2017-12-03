@@ -1988,6 +1988,7 @@ declare namespace Cesium {
         point: PointGraphics;
         polygon: PolygonGraphics;
         polyline: PolylineGraphics;
+        properties: any;
         polylineVolume: PolylineVolumeGraphics;
         position: PositionProperty;
         rectangle: RectangleGraphics;
@@ -2250,7 +2251,7 @@ declare namespace Cesium {
     class PolygonGraphics {
         definitionChanged: Event;
         show: Property;
-        material: ColorMaterialProperty;
+        material: ColorMaterialProperty | Color;
         hierarchy: Property;
         height: Property;
         extrudedHeight: Property;
@@ -2258,7 +2259,7 @@ declare namespace Cesium {
         stRotation: Property;
         fill: Property;
         outline: boolean;
-        outlineColor: Property;
+        outlineColor: Property | Color;
         outlineWidth: number;
         perPositionHeight: Property;
         constructor(options?: { hierarchy?: Cartesian3[]; height?: number; extrudedHeight?: number; show?: boolean; fill?: boolean; material?: Color; outline?: boolean; outlineColor?: Color; outlineWidth?: number; stRotation?: number; granularity?: number; perPositionHeight?: boolean });
