@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import { NavController } from 'ionic-angular';
+import { NavController, MenuController } from 'ionic-angular';
 import { collectExternalReferences } from '@angular/compiler/src/output/output_ast';
+
+import { BackgroundService } from '../../app/background.service';
 
 @Component({
   selector: 'page-home',
@@ -14,33 +16,46 @@ export class HomePage implements OnInit {
 
   private container: string;
 
-  constructor(public navCtrl: NavController) {
+  private denominatorProperty = "assessed_land_area";
+  private numeratorProperty = "total_assessed_value";
+
+  constructor(public navCtrl: NavController, private menu: MenuController, private bgService: BackgroundService) {
+    menu.enable(true);
     this.container = "mapContainer";
 
     const extent = Cesium.Rectangle.fromDegrees(
-        -97.13866408,49.89561288,
-        -97.1373337, 49.89476969
+      -97.13866408, 49.89561288,
+      -97.1373337, 49.89476969
     );
 
-    Cesium.Camera.DEFAULT_VIEW_RECTANGLE=extent;
-    Cesium.Camera.DEFAULT_VIEW_FACTOR=0;
+    Cesium.Camera.DEFAULT_VIEW_RECTANGLE = extent;
+    Cesium.Camera.DEFAULT_VIEW_FACTOR = 0;
+
+    this.bgService.denominatorSource$.subscribe(denom => {
+      this.denominatorProperty = denom;
+      this.updateEntities();
+    })
+
+    this.bgService.numeratorSource$.subscribe(numer => {
+      this.numeratorProperty = numer;
+      this.updateEntities();
+    })
 
   }
 
-  public generateGeoJSONURL(latitude,longitude,radius) {
+  public generateGeoJSONURL(latitude, longitude, radius) {
 
-    var api_string = "https://data.winnipeg.ca/resource/94a6-v8ue.geojson?$where=within_circle(location," + latitude+ "," +longitude+ "," + radius + ")";
+    var api_string = "https://data.winnipeg.ca/resource/94a6-v8ue.geojson?$where=within_circle(location," + latitude + "," + longitude + "," + radius + ")";
     return api_string;
 
   }
 
 
-  public updateDataFromAPI()
-  {
+  public updateDataFromAPI() {
     var camPos = this.mapViewer.camera.positionCartographic;
     //console.log(camPos);
-    var api_string = this.generateGeoJSONURL(Cesium.Math.toDegrees(camPos.latitude),Cesium.Math.toDegrees(camPos.longitude),100);
-    console.log(api_string);    
+    var api_string = this.generateGeoJSONURL(Cesium.Math.toDegrees(camPos.latitude), Cesium.Math.toDegrees(camPos.longitude), 100);
+    console.log(api_string);
     Cesium.GeoJsonDataSource.load(api_string, {
       stroke: Cesium.Color.HOTPINK,
       fill: Cesium.Color.PINK,
@@ -49,21 +64,26 @@ export class HomePage implements OnInit {
     })
       .then(res => {
         this.geoJsonData = res;
+        this.mapViewer.entities.removeAll();
 
         const mappedEntities = res.entities.values.map(ent => {
           const testEntity: Cesium.Entity = this.mapViewer.entities.add(ent);
           // this.mapViewer.zoomTo(testEntity);
           return testEntity;
-        })
+        });
+        this.updateEntities();
 
-        const index = this.getIndex(res.entities.values);
-        const normIndex = this.normaliseValues(index);
+        // this.mapViewer.dataSources.add(this.geoJsonData);
+        setTimeout(this.updateDataFromAPI.bind(this), 5000);
 
-        this.colorEntities(mappedEntities, normIndex);
-
-        this.mapViewer.dataSources.add(this.geoJsonData);
-        setTimeout(this.updateDataFromAPI.bind(this),5000);
       })
+  }
+
+  private updateEntities() {
+    const entities = this.mapViewer.entities.values;
+    const index = this.getIndex(entities);
+    const normIndex = this.normaliseValues(index);
+    this.colorEntities(entities, normIndex);
   }
 
   private colorEntities(mappedEntities: Cesium.Entity[], normIndex: number[]) {
@@ -89,7 +109,7 @@ export class HomePage implements OnInit {
     let initialPosition = Cesium.Cartesian3.fromDegrees(-97.13866408, 49.89561288, 600);
     var initialOrientation = Cesium.HeadingPitchRoll.fromDegrees(7.1077496389876024807, -31.987223091598949054, 0.025883251314954971306);
     var homeCameraView = {
-        destination : initialPosition,
+      destination: initialPosition,
     };
 
     this.mapViewer = new Cesium.Viewer(this.container);
@@ -106,11 +126,21 @@ export class HomePage implements OnInit {
     const timeNow = Cesium.JulianDate.now();
     return entities.map((entity) => {
       const properties = entity.properties.getValue(Cesium.JulianDate.now());
-      return properties.total_assessed_value / properties.assessed_land_area;
+      console.debug(`Numer: ${this.numeratorProperty}`);
+      console.debug(`Denom: ${this.denominatorProperty}`);
+      return properties[this.numeratorProperty] / properties[this.denominatorProperty];
     });
   }
 
   public normaliseValues(values: number[]) {
+    values.forEach((val, i) => {
+      // console.debug(`checking ${val}`);
+      if (val === Infinity || isNaN(val)) {
+        values[i] = 0;
+        // console.debug("Changing value")
+      }
+    })
+    // console.debug(values);
     const max = Math.max(...values);
     return values.map(val => {
       return val / max;
@@ -126,7 +156,7 @@ export class HomePage implements OnInit {
   public perc2color(perc) {
     perc = perc * 100;
     var r, g, b = 0;
-    if(perc < 50) {
+    if (perc < 50) {
       r = 255;
       g = Math.round(5.1 * perc);
     }
@@ -137,6 +167,5 @@ export class HomePage implements OnInit {
     var h = r * 0x10000 + g * 0x100 + b * 0x1;
     return '#' + ('000000' + h.toString(16)).slice(-6);
   }
-  
 
 }
