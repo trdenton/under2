@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { NavController } from 'ionic-angular';
+import { collectExternalReferences } from '@angular/compiler/src/output/output_ast';
 
 @Component({
   selector: 'page-home',
@@ -48,12 +49,33 @@ export class HomePage implements OnInit {
     })
       .then(res => {
         this.geoJsonData = res;
-        
-        // TODO: Do stuff with data before adding to map
+
+        const mappedEntities = res.entities.values.map(ent => {
+          const testEntity: Cesium.Entity = this.mapViewer.entities.add(ent);
+          // this.mapViewer.zoomTo(testEntity);
+          return testEntity;
+        })
+
+        const index = this.getIndex(res.entities.values);
+        const normIndex = this.normaliseValues(index);
+
+        this.colorEntities(mappedEntities, normIndex);
 
         this.mapViewer.dataSources.add(this.geoJsonData);
         setTimeout(this.updateDataFromAPI.bind(this),5000);
       })
+  }
+
+  private colorEntities(mappedEntities: Cesium.Entity[], normIndex: number[]) {
+    mappedEntities.forEach((ent, i) => {
+      const color = this.colorFromScale(ent, normIndex[i]);
+      if (typeof ent.billboard !== "undefined") {
+        ent.billboard.color = color;
+      }
+      else if (typeof ent.polygon !== "undefined") {
+        ent.polygon.material = color;
+      }
+    });
   }
 
   public ngOnInit() {
@@ -64,8 +86,8 @@ export class HomePage implements OnInit {
 
 
     // Create an initial camera view
-    var initialPosition = new Cesium.Cartesian3.fromDegrees(-97.13866408, 49.89561288, 600);
-    var initialOrientation = new Cesium.HeadingPitchRoll.fromDegrees(7.1077496389876024807, -31.987223091598949054, 0.025883251314954971306);
+    let initialPosition = Cesium.Cartesian3.fromDegrees(-97.13866408, 49.89561288, 600);
+    var initialOrientation = Cesium.HeadingPitchRoll.fromDegrees(7.1077496389876024807, -31.987223091598949054, 0.025883251314954971306);
     var homeCameraView = {
         destination : initialPosition,
     };
@@ -77,35 +99,7 @@ export class HomePage implements OnInit {
     //var api_string = "https://data.winnipeg.ca/resource/94a6-v8ue.geojson?$where=within_circle(location," + camPos.longitude + "," + camPos.latitude + ",100)";
 
     this.updateDataFromAPI();
-    /*
-    Cesium.GeoJsonDataSource.load(api_string, {
-      stroke: Cesium.Color.HOTPINK,
-      fill: Cesium.Color.PINK,
-      strokeWidth: 3,
-      markerSymbol: '?'
-    })
-      .then(res => {
-        this.geoJsonData = res;
 
-        const mappedEntities = res.entities.values.map(ent => {
-          const testEntity: Cesium.Entity = this.mapViewer.entities.add(ent);
-          this.mapViewer.zoomTo(testEntity);
-          return testEntity;
-        })
-
-        const index = this.getIndex(res.entities.values);
-        const normIndex = this.normaliseValues(index);
-
-        mappedEntities.forEach((ent, i) => {
-          this.colorByScale(ent, normIndex[i]);
-        })
-
-        
-        // TODO: Do stuff with data before adding to map
-
-        this.mapViewer.dataSources.add(this.geoJsonData);
-      })
-     */
   }
 
   public getIndex(entities: Cesium.Entity[]) {
@@ -123,11 +117,10 @@ export class HomePage implements OnInit {
     });
   }
 
-  public colorByScale(entity: Cesium.Entity, scalar: number) {
+  public colorFromScale(entity: Cesium.Entity, scalar: number) {
     let color: Cesium.Color;
     const cssColor = this.perc2color(scalar);
-    color = Cesium.Color.fromCssColorString(cssColor);
-    entity.polygon.material = color;
+    return Cesium.Color.fromCssColorString(cssColor);
   }
 
   public perc2color(perc) {

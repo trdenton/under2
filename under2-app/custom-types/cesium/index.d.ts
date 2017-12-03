@@ -1132,6 +1132,10 @@ declare namespace Cesium {
         wasCreatedByUpsampling(): boolean;
     }
 
+    class HeadingPitchRoll {
+        static fromDegrees(heading: number, pitch: number, roll: number): HeadingPitchRoll;
+    }
+
     class Quaternion {
         x: number;
         y: number;
@@ -2738,7 +2742,7 @@ declare namespace Cesium {
         moveEnd: Event;
         static DEFAULT_VIEW_RECTANGLE: Rectangle;
         static DEFAULT_VIEW_FACTOR: number;
-        setView();
+        setView(options: any);
         worldToCameraCoordinates(cartesian: Cartesian4, result?: Cartesian4): Cartesian4;
         worldToCameraCoordinatesPoint(cartesian: Cartesian3, result?: Cartesian3): Cartesian3;
         worldToCameraCoordinatesVector(cartesian: Cartesian3, result?: Cartesian3): Cartesian3;
