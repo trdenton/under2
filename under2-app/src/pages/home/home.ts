@@ -3,6 +3,7 @@ import { NavController, MenuController } from 'ionic-angular';
 import { collectExternalReferences } from '@angular/compiler/src/output/output_ast';
 
 import { BackgroundService } from '../../app/background.service';
+import { SERVER_TRANSITION_PROVIDERS } from '@angular/platform-browser/src/browser/server-transition';
 
 @Component({
   selector: 'page-home',
@@ -18,6 +19,8 @@ export class HomePage implements OnInit {
 
   private denominatorProperty = "assessed_land_area";
   private numeratorProperty = "total_assessed_value";
+
+  private requestRadius: number;
 
   constructor(public navCtrl: NavController, private menu: MenuController, private bgService: BackgroundService) {
     menu.enable(true);
@@ -45,11 +48,10 @@ export class HomePage implements OnInit {
 
   public generateGeoJSONURL(latitude, longitude, radius) {
 
-    var api_string = "https://data.winnipeg.ca/resource/94a6-v8ue.geojson?$where=within_circle(location," + latitude + "," + longitude + "," + radius + ")";
+    var api_string = "https://data.winnipeg.ca/resource/94a6-v8ue.geojson?$where=within_circle(location," + latitude + "," + longitude + "," + this.requestRadius + ")";
     return api_string;
 
   }
-
 
   public updateDataFromAPI() {
     var camPos = this.mapViewer.camera.positionCartographic;
@@ -114,6 +116,8 @@ export class HomePage implements OnInit {
 
     this.mapViewer = new Cesium.Viewer(this.container);
     this.mapViewer.scene.camera.setView(homeCameraView);
+    
+    this.requestRadius = this.getViewWidth();
 
     //var api_string = this.generateGeoJSONURL(49.89561288,-97.13866408,200);
     //var api_string = "https://data.winnipeg.ca/resource/94a6-v8ue.geojson?$where=within_circle(location," + camPos.longitude + "," + camPos.latitude + ",100)";
@@ -126,8 +130,6 @@ export class HomePage implements OnInit {
     const timeNow = Cesium.JulianDate.now();
     return entities.map((entity) => {
       const properties = entity.properties.getValue(Cesium.JulianDate.now());
-      console.debug(`Numer: ${this.numeratorProperty}`);
-      console.debug(`Denom: ${this.denominatorProperty}`);
       return properties[this.numeratorProperty] / properties[this.denominatorProperty];
     });
   }
@@ -166,6 +168,15 @@ export class HomePage implements OnInit {
     }
     var h = r * 0x10000 + g * 0x100 + b * 0x1;
     return '#' + ('000000' + h.toString(16)).slice(-6);
+  }
+
+  public getViewWidth() {
+    const rectangle = this.mapViewer.camera.computeViewRectangle();
+    console.debug(rectangle);
+    const eastCoord = new Cesium.Cartographic(rectangle.east, rectangle.north);
+    const westCoord = new Cesium.Cartographic(rectangle.west, rectangle.north);
+    const geodesic = new Cesium.EllipsoidGeodesic(eastCoord, westCoord);
+    return geodesic.surfaceDistance;
   }
 
 }

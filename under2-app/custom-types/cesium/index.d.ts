@@ -2749,6 +2749,7 @@ declare namespace Cesium {
         cameraToWorldCoordinates(cartesian: Cartesian4, result?: Cartesian4): Cartesian4;
         cameraToWorldCoordinatesPoint(cartesian: Cartesian3, result?: Cartesian3): Cartesian3;
         cameraToWorldCoordinatesVector(cartesian: Cartesian3, result?: Cartesian3): Cartesian3;
+        computeViewRectangle(): Rectangle;
         move(direction: Cartesian3, amount?: number);
         moveForward(amount?: number);
         moveBackward(amount?: number);
